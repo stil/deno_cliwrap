@@ -4,7 +4,11 @@ Convenient wrapper for launching CLI applications in Deno.
 
 # Usage
 
-In the following example, you'll detect deno executable version.
+In the following examples, we'll use `deno` executable as it's safe to assume you're familiar with it and you have it already installed.
+
+### Detect deno executable version.
+
+We'll call `deno -V` and capture standard output.
 
 ```ts
 import {
@@ -27,4 +31,37 @@ const cmd = Cli.wrap("deno")
 
 await cmd.waitForExit();
 console.log(stdout); // deno 1.23.2
+```
+
+### Evaluate any code in Deno runtime
+
+We'll call `deno run -`, where '-' means that script will be read from stdin.
+
+```ts
+import {
+  Cli,
+  createPipeSourceFromString,
+  createPipeTargetToDelegate,
+} from "https://deno.land/x/cliwrap/mod.ts";
+
+const fnText = `console.log('Hello World'.replace('o', ''));`;
+
+let stdout = "";
+const cmd = Cli.wrap("deno")
+  .withArguments(["run", "-"])
+  .withStandardInputPipe(createPipeSourceFromString(fnText))
+  .withStandardOutputPipe(
+    createPipeTargetToDelegate((data) => {
+      stdout += data.text;
+      if (data.eol) {
+        stdout += "\r\n";
+      }
+    })
+  )
+  .execute();
+
+const cmdResult = await cmd.waitForExit();
+
+console.log(cmdResult.code); // 0 - success
+console.log(stdout); // "Hell World"
 ```
