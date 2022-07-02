@@ -6,6 +6,7 @@ export class Cli {
   private stderrPipe?: PipeTarget;
   private stdinPipe?: PipeSource;
   private env?: Record<string, string>;
+  private validation?: CommandResultValidation;
 
   private constructor(targetFilePath: string) {
     this.targetFilePath = targetFilePath;
@@ -37,6 +38,11 @@ export class Cli {
 
   public withStandardInputPipe(pipe: PipeSource) {
     this.stdinPipe = pipe;
+    return this;
+  }
+
+  public withValidation(mode: CommandResultValidation) {
+    this.validation = mode;
     return this;
   }
 
@@ -76,13 +82,20 @@ export class Cli {
       waitForExit: async () => {
         await Promise.all(tasks);
         const status = await proc.status();
-        if (status.code !== 0) {
-          throw new Error("Command failed.");
-        }
 
         proc.stdout?.close();
         proc.stderr?.close();
         proc.close();
+
+        const validation =
+          this.validation ?? CommandResultValidation.ZeroExitCode;
+
+        if (validation === CommandResultValidation.ZeroExitCode) {
+          if (status.code !== 0) {
+            throw new Error("Command failed.");
+          }
+        }
+
         return status;
       },
     };
@@ -101,4 +114,9 @@ export interface PipeTarget {
 export interface PipeSource {
   setWriter: (writer: Deno.Writer & Deno.Closer) => void;
   copyTo: (writer: Deno.Writer & Deno.Closer) => Promise<void>;
+}
+
+export enum CommandResultValidation {
+  None,
+  ZeroExitCode,
 }
