@@ -4,21 +4,28 @@ import { colors, ioUtil } from "./deps.ts";
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
 
+interface IncomingTextChunk {
+  text: string;
+
+  /** Whether the text is terminated with EOL sequence. */
+  eol: boolean;
+}
+
 export function createPipeTargetToDelegate(
-  func: (props: { line: string; isFullLine: boolean }) => void
+  func: (props: IncomingTextChunk) => void
 ): PipeTarget {
   return {
     setReader: () => {},
     copyFrom: async (reader) => {
       let partial: number[] = [];
 
-      const flush = (isFullLine: boolean) => {
+      const flush = (eol: boolean) => {
         if (partial.length > 0) {
-          let line = textDecoder.decode(new Uint8Array(partial));
-          if (isFullLine) {
-            line = line.slice(0, -2);
+          let text = textDecoder.decode(new Uint8Array(partial));
+          if (eol) {
+            text = text.slice(0, -2);
           }
-          func({ line, isFullLine });
+          func({ text, eol });
           partial = [];
         }
       };
@@ -52,27 +59,27 @@ export function createPipeTargetToDelegate(
 export function createRedirectedPipes(
   cmdPrefix: string,
   handleLine?: (props: {
-    line: string;
-    isFullLine: boolean;
+    text: string;
+    eol: boolean;
     pipe: "stdout" | "stderr";
   }) => void
 ) {
   let previousPartial = false;
 
   const pipe = (pipe: "stdout" | "stderr") => {
-    return createPipeTargetToDelegate(({ line, isFullLine }) => {
+    return createPipeTargetToDelegate(({ text, eol }) => {
       const prefix = previousPartial
         ? ""
         : pipe === "stdout"
         ? colors.green(cmdPrefix + "> ")
         : colors.yellow(cmdPrefix + "# ");
 
-      if (isFullLine) consoleWriteLine(prefix + line);
-      else consoleWrite(prefix + line);
-      previousPartial = !isFullLine;
+      if (eol) consoleWriteLine(prefix + text);
+      else consoleWrite(prefix + text);
+      previousPartial = !eol;
 
       if (handleLine) {
-        handleLine({ line, isFullLine, pipe });
+        handleLine({ text, eol, pipe });
       }
     });
   };

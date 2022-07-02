@@ -2,9 +2,9 @@
 
 Convenient wrapper for launching CLI applications in Deno.
 
-# Usage example
+# Usage
 
-Check deno executable version:
+In the following example, you'll detect deno executable version.
 
 ```ts
 import {
@@ -17,8 +17,8 @@ const cmd = Cli.wrap("deno")
   .withArguments(["-V"])
   .withStandardOutputPipe(
     createPipeTargetToDelegate((data) => {
-      stdout += data.line;
-      if (data.isFullLine) {
+      stdout += data.text;
+      if (data.eol) {
         stdout += "\r\n";
       }
     })
