@@ -6,7 +6,7 @@ Convenient wrapper for launching CLI applications in Deno.
 
 In the following examples, we'll use `deno` executable as it's safe to assume you're familiar with it and you have it already installed.
 
-### Detect deno executable version.
+### Detect deno executable version
 
 We'll call `deno -V` and capture standard output.
 
@@ -64,4 +64,39 @@ const cmdResult = await cmd.waitForExit();
 
 console.log(cmdResult.code); // 0 - success
 console.log(stdout); // "Hell World"
+```
+
+### Capture stderr
+
+We'll call `deno run` but with a script that contains syntax error. Our goal is to capture error message.
+
+```ts
+import {
+  Cli,
+  CommandResultValidation,
+  createPipeSourceFromString,
+  createPipeTargetToDelegate,
+} from "https://deno.land/x/cliwrap/mod.ts";
+
+const fnText = `console.log('Hello World'.eplace('o', ''));`;
+
+let stderr = "";
+const cmd = Cli.wrap("deno")
+  .withArguments(["run", "-"])
+  .withStandardInputPipe(createPipeSourceFromString(fnText))
+  .withStandardErrorPipe(
+    createPipeTargetToDelegate((data) => {
+      stderr += data.text;
+      if (data.eol) {
+        stderr += "\r\n";
+      }
+    })
+  )
+  .withValidation(CommandResultValidation.None) // Required to prevent throwing Error
+  .execute();
+
+const cmdResult = await cmd.waitForExit();
+
+console.log(cmdResult.code); // 1 - error
+console.log(stderr); // error: Uncaught TypeError: "Hello World".eplace is not a function
 ```
