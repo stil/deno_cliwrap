@@ -1,7 +1,9 @@
-import { assertEquals } from "https://deno.land/std@0.146.0/testing/asserts.ts";
-import { Cli, createPipeTargetToDelegate } from "./cliwrap.ts";
+import {
+  assertEquals,
+  Cli,
+  createPipeTargetToDelegate,
+} from "./cliwrap_test_deps.ts";
 
-// Compact form: name and function
 Deno.test("Basic stdout/stderr tests", async () => {
   let stdout = "";
   let stderr = "";
