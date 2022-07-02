@@ -2,6 +2,8 @@
 
 Convenient wrapper for launching CLI applications in Deno.
 
+Module link: https://deno.land/x/cliwrap
+
 # Usage
 
 In the following examples, we'll use `deno` executable as it's safe to assume you're familiar with it and you have it already installed.
